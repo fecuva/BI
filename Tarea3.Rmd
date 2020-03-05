@@ -1,0 +1,71 @@
+---
+title: "Tarea3"
+author: "Luis Felipe Cubero Vargas & Josue Arrieta"
+date: "3/4/2020"
+output:
+  html_document:
+    fig_caption: yes
+    highlight: haddock
+    number_sections: yes
+    theme: readable
+    toc: yes
+    toc_float: yes
+---
+
+## Importar Librerias
+
+```{r setup, results='hide'}
+library(arules)
+library(arulesViz)
+library(tidyverse)
+library(plyr)
+library(ggplot2)
+library(knitr)
+library(lubridate)
+library(RColorBrewer)
+```
+
+## Entendimiento del Negocio
+
+El exito de este proyecto desde una perspectiva de Inteligencia de negocios se refiere a la posibilidad de lograr encontrar:
+  
+  1) Descubrir características que tiene un persona para lograr tener un salario superios a los $50mil dolares
+  2) Realizar lo anterior por medio del descubrimiento de reglas de interés para lograr ese salario 
+
+
+## Entendimiento de los datos
+
+Lo primero es cargar los datos
+
+```{r}
+datos<- read.csv('AdultosUSA.csv',stringsAsFactors = FALSE)
+head(datos)
+```
+
+Ahora vamos a revisar la estructura de los datos para conocer los tipos de datos 
+```{r}
+str(datos)
+```
+De lo anterior podemos observar que tenemos 10 columnas y 2500 filas como datos 
+
+Posteriomente revisamos la cantidad de na
+
+```{r}
+sum(is.na(datos))
+```
+
+Podemos comprobar que tenemos 0 datos perdidos
+
+
+## Preparación de los datos
+
+Dado que lo que queremos es determinar a las personas con salarios mayores a $50 mil debemos convertir esa columna junto a las que vamos a utilizar en factores en caso de estar seleccionadas como variables
+
+```{r echo=TRUE, results='hide'}
+datos %>% mutate(Ingresos=as.factor(Ingresos))
+datos %>% mutate(Ocupacion=as.factor(Ocupacion))
+datos %>% mutate(HorasSemanales=as.factor(as.character(HorasSemanales)))
+```
+
+
+
