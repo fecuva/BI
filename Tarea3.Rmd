@@ -12,6 +12,8 @@ output:
     toc_float: yes
 ---
 
+# Primera Parte: 
+
 ## Importar Librerias
 
 ```{r setup, results='hide'}
@@ -27,58 +29,292 @@ library(RColorBrewer)
 
 ## Entendimiento del Negocio
 
-El exito de este proyecto desde una perspectiva de Inteligencia de negocios se refiere a la posibilidad de lograr encontrar:
-  
-  1) Descubrir características que tiene un persona para lograr tener un salario superios a los $50mil dolares
-  2) Realizar lo anterior por medio del descubrimiento de reglas de interés para lograr ese salario 
+Objetivo del estudio:
 
+-El objetivo de negocio es  descubrir caracteristicas que podrian
+llevar a una persona a ganar tener ingresos superiores a $50mil.
+
+-El  objetivo de mineria de datos es descubrir reglas de interes que permitan
+asociar caracteristicas con el hecho de ganar mas de $50mil.
+
+#Segunda Parte
 
 ## Entendimiento de los datos
 
 Lo primero es cargar los datos
 
 ```{r}
-datos<- read.csv('AdultosUSA.csv',stringsAsFactors = FALSE)
+datos<- read.csv('AdultosUSA.csv',sep = ';',stringsAsFactors = FALSE)
 head(datos)
 ```
 
 Ahora vamos a revisar la estructura de los datos para conocer los tipos de datos 
 ```{r}
 str(datos)
+colnames(datos)
+datos <- na.omit(datos)
+summary(datos)
+count (datos)
 ```
 De lo anterior podemos observar que tenemos 10 columnas y 2500 filas como datos 
 
-Posteriomente revisamos la cantidad de na
-
-```{r}
-sum(is.na(datos))
-```
-
 Podemos comprobar que tenemos 0 datos perdidos
 
+# Tercera Parte
 
 ## Preparación de los datos
 
-Dado que lo que queremos es determinar a las personas con salarios mayores a $50 mil debemos convertir esa columna junto a las que vamos a utilizar en factores en caso de estar seleccionadas como variables
-
-```{r echo=TRUE, results='hide'}
-# datos %>% mutate(Ingresos=as.factor(Ingresos))
-# datos %>% mutate(Ocupacion=as.factor(Ocupacion))
-# datos %>% mutate(HorasSemanales=as.factor(as.character(HorasSemanales)))
-#Con este de abajo convertí todos los elementos a factores
-datos<- data.frame(lapply(datos, as_factor))
+Clasificacion de Rango de edad, nuevo atributo rango de edAd
+ 
+```{r}
+datos$rangoedad[datos$Edad <= 10] <- "Infante"
+datos$rangoedad[datos$Edad > 10 & datos$Edad <= 20] <- "Adolecente"
+datos$rangoedad[datos$Edad > 20 & datos$Edad <=65] <- "Adulto"
+datos$rangoedad[datos$Edad >= 65] <- "Anciano" 
 ```
 
-## Modelo
+Clasificacion tipo de jornada, mas de 40 horas semanales es jornada expandida.
 
-```{r echo=TRUE}
-# Aqui creo un objeto tipo transactions para el análisis
+```{r}
+datos$Tipodejornada <- ifelse(datos$HorasSemanales >= 40, 
+                        "Jornada Normal", "Jornada expandida") 
+head(datos)
+```
+
+Es de interes ver el comportamiento de las reglas de asociacion dependiendo del 
+estado civil, por lo que se hizo un split del data fram por estado civil.
+```{r}
+datossolteros <- subset(x = datos, subset = (EstadoCivil== "Never-married"), select = c("Ingresos", "Ocupacion", "Tipodejornada", "Sexo", "rangoedad"))
+head(datossolteros)
+
+datoscasados <- subset(x = datos, subset = (EstadoCivil== "Married-civ-spouse"), select = c("Ingresos", "Ocupacion", "Tipodejornada", "Sexo", "rangoedad"))
+head(datoscasados)
+
+datosdivorciados <- subset(x = datos, subset = (EstadoCivil== "Divorced"), select = c("Ingresos", "Ocupacion", "Tipodejornada", "Sexo", "rangoedad"))
+head(datosdivorciados)
+```
+
+# Cuarta Parte
+
+## Fase de modelado
+
+Se genera un nuevo data frame con los datos ahora como factores
+
+```{r}
+datos<- data.frame(lapply(datos, as.factor))
+```
+
+Los factores se codifican como transaciones y estan listos para el analisis. 
+
+```{r}
 datos2 <- as(datos, "transactions")
+```
 
-# Aqui inicia la parte de Reglas
-reglas<- apriori(datos2,parameter = list(supp=0.001,conf=0.8,maxlen=10))
-# inspect(reglas[1:10,])
-# 
+Se utiliza el metodo apriori para generar las reglas con un soporte del 10%
+una confidence level de 85% y un max len de 10.
+```{r}
+reglas<- apriori(datos2,parameter = list(supp=0.10,conf=0.85,maxlen=10))
+inspect(reglas[1:10])
+```
+
+Se revisan y se filtran los subconjuntos
+
+
+```{r}
 subconjuntos<- which(colSums(is.subset(reglas,reglas))>1)
 
+reglasFinal<- reglas[-subconjuntos]
+inspect(reglasFinal[1:10])
 ```
+
+Ahora se corre el modelo para la poblacion soltera.
+
+```{r}
+datossolteros$Ingresos <- as.factor(datossolteros$Ingresos) 
+datossolteros$Ocupacion <- as.factor(datossolteros$Ocupacion) 
+datossolteros$Tipodejornada <- as.factor(datossolteros$Tipodejornada) 
+```
+
+Se genera un nuevo data frame con los datos ahora como factores. 
+
+```{r}
+datossolteros<- data.frame(lapply(datossolteros, as.factor))
+```
+
+Los factores se codifican como transaciones y estan listos para el analisis. 
+```{r}
+datos3 <- as(datossolteros, "transactions")
+```
+
+Se utiliza el metodo apriori para generar las reglas con un soporte del 10%
+una confidence level de 85% y un max len de 10.
+
+```{r}
+reglas2<- apriori(datos3,parameter = list(supp=0.10,conf=0.85,maxlen=10))
+inspect(reglas[1:10])
+```
+
+Se revisan y se filtran los subconjuntos
+
+```{r}
+subconjuntos2<- which(colSums(is.subset(reglas2,reglas2))>1)
+
+reglasFinal2<- reglas2[-subconjuntos2]
+# inspect(reglasFinal2[1:10])
+```
+
+Se filtran las reglas con confianza superior a 0.25
+```{r}
+mejoresReglas2<- reglasFinal2[quality(reglasFinal2)$confidence>0.25]
+```
+
+Graficar las 5 mejores reglas
+```{r}
+cincoMejores2<- head(mejoresReglas2,n=5,by='confidence')
+
+plot(cincoMejores2,method = 'graph',engine = 'htmlwidget')
+
+
+reglasAntIngMay502<- apriori(datos3,parameter =list(supp=0.0011,conf=0.9), 
+                            appearance = list(default='lhs',rhs='Ingresos=>50K.'))
+
+inspect(head(reglasAntIngMay502))
+```
+
+Ahora se corre el modelo para la poblacion casados.
+
+```{r}
+datoscasados$Ingresos <- as.factor(datoscasados$Ingresos) 
+datoscasados$Ocupacion <- as.factor(datoscasados$Ocupacion) 
+datoscasados$Tipodejornada <- as.factor(datoscasados$Tipodejornada) 
+```
+
+Se genera un nuevo data frame con los datos ahora como factores. 
+
+```{r}
+datoscasados<- data.frame(lapply(datoscasados, as.factor))
+```
+
+Los factores se codifican como transaciones y estan listos para el analisis. 
+
+```{r}
+datos4 <- as(datoscasados, "transactions")
+```
+
+Se utiliza el metodo apriori para generar las reglas con un soporte del 10%
+una confidence level de 85% y un max len de 10.
+
+```{r}
+reglas3<- apriori(datos4,parameter = list(supp=0.10,conf=0.85,maxlen=10))
+inspect(reglas[1:10])
+```
+
+Se revisan y se filtran los subconjuntos
+
+```{r}
+subconjuntos3<- which(colSums(is.subset(reglas3,reglas3))>1)
+
+reglasFinal3<- reglas3[-subconjuntos3]
+# inspect(reglasFinal3[1:10])
+```
+
+Se filtran las reglas con confianza superior a 0.25
+
+```{r}
+mejoresReglas3<- reglasFinal3[quality(reglasFinal3)$confidence>0.25]
+```
+ 
+Graficar las 5 mejores reglas
+
+```{r}
+cincoMejores3<- head(mejoresReglas3,n=5,by='confidence')
+
+plot(cincoMejores3,method = 'graph',engine = 'htmlwidget')
+
+
+reglasAntIngMay503<- apriori(datos4,parameter =list(supp=0.0011,conf=0.9), 
+                             appearance = list(default='lhs',rhs='Ingresos=>50K.'))
+
+inspect(head(reglasAntIngMay503))
+```
+
+Ahora se corre el modelo para la poblacion Divorsiados.
+
+```{r}
+datosdivorciados$Ingresos <- as.factor(datosdivorciados$Ingresos) 
+datosdivorciados$Ocupacion <- as.factor(datosdivorciados$Ocupacion) 
+datosdivorciados$Tipodejornada <- as.factor(datosdivorciados$Tipodejornada) 
+```
+
+Se genera un nuevo data frame con los datos ahora como factores. 
+
+```{r}
+datosdivorciados<- data.frame(lapply(datosdivorciados, as.factor))
+```
+
+Los factores se codifican como transaciones y estan listos para el analisis. 
+
+```{r}
+datos5 <- as(datosdivorciados, "transactions")
+```
+
+Se utiliza el metodo apriori para generar las reglas con un soporte del 10%
+una confidence level de 85% y un max len de 10.
+
+```{r}
+reglas4<- apriori(datos5,parameter = list(supp=0.10,conf=0.85,maxlen=10))
+inspect(reglas[1:10])
+```
+
+Se revisan y se filtran los subconjuntos
+
+```{r}
+subconjuntos4<- which(colSums(is.subset(reglas4,reglas4))>1)
+
+reglasFinal4<- reglas4[-subconjuntos4]
+# inspect(reglasFinal4[1:10])
+```
+
+Se filtran las reglas con confianza superior a 0.25
+```{r}
+mejoresReglas4<- reglasFinal4[quality(reglasFinal4)$confidence>0.25]
+```
+
+Graficar las 5 mejores reglas
+```{r}
+cincoMejores4<- head(mejoresReglas4,n=5,by='confidence')
+
+plot(cincoMejores4,method = 'graph',engine = 'htmlwidget')
+
+
+reglasAntIngMay504<- apriori(datos4,parameter =list(supp=0.0011,conf=0.9), 
+                             appearance = list(default='lhs',rhs='Ingresos=>50K.'))
+
+inspect(head(reglasAntIngMay504))
+```
+
+# Conclusiones
+
+Del analisis de todos los datos sin separarlos:
+
+La primera regla es que el ingreso mayor a 50k es de personas de jornada normal
+otra regla es que el tiepo de jornada normal produce ingresosd mayores a 50k.
+Otra de importancia es que personas casadas generan ingresos mayores a 50k,
+
+De las personas solteras:
+
+Las personas solteras tienen un ingreso mayor a 50k.
+Las profesion Prof-Specialty tiene un rango de edad adulto.
+El tipo de Jornada normal es normalmente de personas de rango de edad adulto.
+
+De las personas Casadas:
+
+La ocupacion de ventas genera un ingreso mayor a 50k.
+Las personas casadas tambien tienen un ingreso mayor a 50k.
+la profersion Prof-specialty es normalmente de personas en el rango de edad adulto
+
+De las personas Divorsiadas:
+
+El rango de edad es Adulto.
+La ocupacion Exec-magerial es de jornada normal en esta poblacion.
+Tambien tienen un ingreso de 50k.

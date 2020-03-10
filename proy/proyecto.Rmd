@@ -1,0 +1,152 @@
+---
+title: "Proyecto"
+author: "Luis Felipe Cubero Vargas & Josue Arrieta"
+date: "3/9/2020"
+output:
+  html_document:
+    fig_caption: yes
+    highlight: haddock
+    number_sections: yes
+    theme: readable
+    toc: yes
+    toc_float: yes
+---
+
+```{r}
+setwd('~/BI/proy')
+```
+
+# Entendimiento del negocio
+
+## Objetivos del negocio 
+
+Objetivos:
+
+  * Determinar que variables predicen la probabilidad de obtener una pieza defectuosa por fallos de ingenieria, con el fin determinar la efectividad de los trabajos de departamento  para asi evaluar la asignacion de personal. 
+
+
+Criterio de  éxito:
+
+  * Predecir que varibles me indican cuando va a suceder una falla en la pieza por fallos de ingenieria.
+  
+  
+## Evaluación de la situación actual 
+
+Inventario de recursos
+
+Como parte de la implementacion de mejora continua en la empresa "Herrero y sobrino", se cuenta con un departamento de 
+recoleccion de datos en linea que alimenta el inventario de unidades desechadas y sus causas. La empresa igualmente cuenta, con un sistema de ERP que alimienta los datos via cierre y ejecusion de ordenes de produccion, con acceso a los expertos de cada area. Como parte de la implementacion de reduccion de desechos de componentes caros, el departamento de ingenieria esta centralizando los datos en una nube para el analisis del departamento de mejora continua.
+
+Requirimientos
+
+- Acceso informacion de produccion: orden de trabajo, numero de componente, numero dispositivo final, linea, turno y cantidad de desecho. 
+
+Supuestos
+
+- Los datos son filtrados por los expertos del area. 
+- se contabilizan los desechos totales de la pruduccion. 
+
+Restricciones 
+
+- La empresa cuenta con un sistema de acceso restrigido a la informacion, la data obtenida es una muestra significativa de las mediciones de enero. 
+- Se cuenta con acceso directo a los datos. 
+
+Riesgos y contigencia 
+
+Dentro de los riesgos existe la posibilidad de que no encontramos un modelo que pueda ayudarnos a determinar los elementos que predicen en mayor medida la generación de piezas defectuosas.
+
+Por otro lado existe la posibilidad de que ocurra overfitting o underfitting y se realicen prediciones errones que lleven a malas decisiones de negocio, por ejemplo si el modelo determina que el turno es una variable importante y se toman medidas entorno a esta podriamos caer en decisiones no solo que perjudiquen a la empresa si no también a los empleados de la empresa. 
+
+Beneficios 
+  
+- Analisis y provenir el desecho debido a errores de validacion ejecutados por el departamento de ingenieria. 
+## Plan del Proyecto
+
+Plan del proyecto: 
+
+| Fase                              | Tiempo estimado | Recursos                                               | Riesgos                                                                                                                                  |
+|-----------------------------------|-----------------|--------------------------------------------------------|------------------------------------------------------------------------------------------------------------------------------------------|
+| Recoleccion de datos              | 1 mes           | Pesonal de la empresa                                  | -Datos errados  -Confidencialidad de la empresa, PN sensibles.                                                                           |
+| Filtro y generacion de base datos | 2 Semanas       | Ingenieros de produccion                               | - Disponibilidad del ingeniero a cargo  - Problemas de conexión con la intranet de la empresa.  - Capacidad computacional insuficiente.  |
+| Analisis de base de datos         | 3 semanas       | Ingenieros de Data Science                             | - No tener suficientes datos para que el modelo converja - No tener la capacidad de hardware para procesar los datos                     |
+| Conclusion e implementacioon      | 1 semana        | Stakeholder de la empresa e Ingenieros de Data Science | - Falta de comunicacion.                                                                                                                 |
+
+Evaluación inicial de herramientas y técnicas
+
+  * Postgresql
+  * Python
+  * R
+
+## Objetivos de minería de datos
+
+El objetivo de la minería de datos es determinar un modelo que me permita obtener los elementos que me explican la generación de piezas defectuosas por problemas de ingenieria. 
+
+El criterio de exito es determinar un modelo que me permita predecir en que casos hay probabilidad de que sea una pieza defectuosa debida a fallos de ingenieria en produccion normal. 
+
+
+# Entendimiento de los datos
+
+
+## Recopilación inicial de datos
+
+### Descripción de los datos
+
+Los datos para el análsis corresponde a una base de datos de un proceso elaboración dispositivos medicos. Donde cada columna esta dado por:
+
+* Production Family: Familia de productos
+* Wk: Semana
+* Fecha: Fecha
+* P/N: Numero de parte del producto
+* P/N COMPONENTE: Numero de parte del componente que fallo
+* WO: Orden de trabajo
+* Quantity: Cantidad de piezas defectuosas
+* Cod. Defecto: Codigo de defecto
+* Causa
+* Linea
+* Turno: T1 (Mañana), T 1 (Mañana extendidad), T2 (Tarde),T 2 (Tarde extendido) , T3 (Noche)
+
+
+### Exploración de los datos
+
+Lo primero es cargar los datos 
+
+```{r}
+datos<- read.csv('scrap_data_final.csv',sep = ';',stringsAsFactors = FALSE)
+head(datos)
+```
+Ahora reviso la estructura
+```{r}
+str(datos)
+```
+Luego vemos la estadistica descriptiva de los elementos 
+```{r}
+summary(datos)
+```
+
+```{r}
+library(ggplot2)
+# Basic histogram
+ggplot(datos, aes(x=quantity)) + geom_histogram(bins = 18000, binwidth = 300)
+```
+
+```{r}
+
+p<-ggplot(data=datos, aes(x=wk, y=quantity)) +
+  geom_bar(stat="identity", fill="steelblue")+
+  theme_minimal()
+p
+```
+
+Ahora vamos a buscar si existen na o datos perdidos
+```{r}
+sum(is.na(datos))
+```
+Como si existen entonces procedo a eliminar los datos nulos 
+```{r}
+datos <- na.omit(datos)
+```
+
+
+
+
+
