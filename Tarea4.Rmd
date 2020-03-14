@@ -1,0 +1,82 @@
+---
+title: "Tarea 4"
+author: "Luis Felipe Cubero Vargas & Josue Arrieta"
+date: "3/14/2020"
+output:
+  html_document:
+    fig_caption: yes
+    highlight: haddock
+    number_sections: yes
+    theme: readable
+    toc: yes
+    toc_float: yes
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+ library(tibble)
+ library(stringr)
+ library(rvest)
+ library(FactoMineR)
+ library(ggplot2)
+
+```
+
+# Entendimiento de los datos 
+
+Los datos a  extraer corresponden a una noticia de los salarios minimos en el 2020 en Costa Rica
+Enlace: https://www.puntojuridico.com/publican-salarios-minimos-que-regiran-en-el-2020/
+
+# Preparación de los datos
+
+```{r}
+dirPag<-'https://www.puntojuridico.com/publican-salarios-minimos-que-regiran-en-el-2020/'
+  
+pag<- read_html(dirPag,encoding = 'UTF-8') 
+```
+
+Ahora vamos a extraer la información de las tablas 
+
+```{r}
+tablasPag<- html_table(pag,fill=TRUE)
+  
+length(tablasPag)
+  
+tablasPag
+```
+
+En este caso solo existe una tabla en la página, entonces procedemos a sacarla de la lista y poder manipularla como un dataframe
+
+```{r}
+datos<- tablasPag[[1]]
+   
+datos
+```
+
+Ahora procedemos a limpiar los datos, lo primero es eliminar la columna 
+```{r}
+datos <- datos[c(1,2,4)]
+```
+
+Ahora procedemos a limpiar los datos 
+```{r}
+colnames(datos)<-head(datos,1)
+```
+```{r}
+datos <- na.omit(datos)
+datos<- datos[-c(1,6,16,18), ]
+```
+
+```{r}
+salarios2020 <- str_remove(datos$`SALARIOS que regirán en el 2020`,'\\s*\\¢')
+salarios2020 <- str_remove(salarios2020,'\\s*\\,')
+#salarios2020 <- as.numeric(salarios2020)
+```
+```{r}
+salarios2019 <- str_remove(datos$`SALARIOS VIGENTES EN 2019`,'\\s*\\¢')
+salarios2019 <- str_remove(salarios2019,'\\s*\\,')
+salarios2019 <- as.numeric(salarios2019)
+```
+
+
+
