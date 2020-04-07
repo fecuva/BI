@@ -1,0 +1,214 @@
+---
+title: "Clustering Jerárquico"
+author: "Lorena Zuniga"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+# carga de paquetes necesarios
+library(dendextend)
+library(clValid)
+library(factoextra)
+library(NbClust)
+```
+
+### Carga de los datos y exploración inicila
+
+```{r}
+    datos<-USArrests
+
+# exploración inicial de los datos
+
+    head(datos)
+
+    summary(datos)
+# determinar si existen datos faltantes en el dataset
+
+    any(is.na(datos))
+
+```
+
+### Normalización de los datos
+
+```{r}
+    datos_esc<- as.data.frame(scale(datos))
+
+    head(datos_esc)
+    summary(datos_esc)
+
+```
+
+### Cálculo de la matriz de distancias
+```{r}
+# se calculan las distancias entre los puntos
+    matriz_distancias<- dist(datos_esc,method = 'euclidean')
+```
+
+### Clustering Jerárquico Aglomerativo
+
+```{r}
+# se establece el criterio de linkage y se ejecuta el clustering
+
+    clustJer_conAvg<- hclust(matriz_distancias,method = 'average')
+
+# se genera un segundo clustering usando otro criterio de linkage
+   clustJer_single<- hclust(matriz_distancias,method = 'single')
+```
+
+### Visualización de los clusters - average
+
+```{r fig.align='center', fig.height=8}
+
+# dendrograma del clustering  usando average
+    plot(clustJer_conAvg)
+```
+
+### Visualización de los clusters - single
+
+```{r fig.align='center', fig.height=8}
+ plot(clustJer_single)
+```
+
+### Otra forma de visualizar los clusters
+
+```{r fig.align='center'}
+     dendrograma<-as.dendrogram(clustJer_conAvg)
+    
+    color_dendro<- color_branches(dendrograma,k=4)
+    
+    plot(color_dendro)
+
+```
+
+### Una tercera forma de visualizar los clusters
+
+```{r fig.align='center'}
+ 
+    fviz_dend(clustJer_conAvg,k=4)
+```
+
+### Corte del dendrograma para generar 4 clusters
+
+```{r }
+# se corta el dendrograma indicando una cantidad de clusters
+    clustersJer<- cutree(clustJer_conAvg,k=4)
+    head(clustersJer)
+```
+
+#### Visualización del corte
+
+```{r fig.align='center'}
+# gráfico del corte con los 4 clusters
+    
+    plot(clustJer_conAvg)
+    rect.hclust(clustJer_conAvg,k=4)
+    abline(h=4,col='blue')    
+
+```
+
+### Cantidad de individuos por cluster
+
+```{r}
+  table(clustersJer)
+```
+
+### Estados y sus clusters
+
+```{r}
+# los nombres de las filas se almacenan en una nueva columna
+    datos$State<-rownames(datos)
+    rownames(datos)<-NULL
+    
+# se agrega al dataframe original el campo que indica el cluster para cada individuo  
+    datos$cluster<- clustersJer
+    
+    head(datos,3)
+```
+
+### Características de cada cluster
+
+```{r}
+# obtener los promedios de cada cluster
+    
+    calCaracteristicasProm<- function(i,datos,clusters)
+    {
+        pos<- (i == clusters)
+        
+        #calcula el promedio de la columna
+        
+        colMeans(datos[pos,])
+    }
+    
+# se excluye la columna del nombre de los estados para calcular la tabla de centroides
+    tablaDescripcion<- lapply(unique(clustersJer),calCaracteristicasProm,datos[,c(-5,-6)],clustersJer)   
+    
+    tablaDescripcion
+```
+
+### Otra forma de obtener las características
+
+```{r}
+  aggregate(datos[,-5],list(clustersJer),mean)
+```
+
+### Ver individuos por cluster
+
+```{r}
+ 
+# individuos del cluster 1
+    datos[datos$cluster==1,]$State
+    
+# individuos del cluster 2 
+    datos[datos$cluster==2,]$State
+    
+```
+
+### Clustering Jerárquico Divisivo
+
+```{r}
+ 
+# usando diana
+
+  clusDiv <- diana(datos_esc,metric='euclidean') 
+  
+
+```
+
+### Visualización de los clusters
+
+```{r fig.align='center'}
+   pltree(clusDiv)
+```
+
+### Corte para generar 4 clusters 
+
+```{r}
+  corteClus<- cutree(clusDiv,4)
+  corteClus
+```
+
+### Visualización del corte
+
+```{r fig.align='center'}
+# gráfico del corte con los 4 clusters
+    plot(clusDiv)
+    rect.hclust(clusDiv,k=4)
+    abline(h=4,col='blue')    
+
+```
+
+### Estados y clusters
+
+```{r}
+ datos$cDivisivo<- corteClus
+
+ # estados en el cluster 1
+ datos[datos$cDivisivo==1,]$State
+ 
+ # estados del cluster 2
+ 
+ datos[datos$cDivisivo==2,]$State
+```
+ 

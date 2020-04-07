@@ -1,0 +1,55 @@
+---
+title: "Ejemplo Dataframe"
+author: "Lorena Zuniga"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+  # carga de bibliotecas
+
+  library(kableExtra)
+
+```
+# Lectura de los datos  titulo nivel 1
+
+## título nivel 2  
+### título nivel 3
+
+Ejemplo de lectura de un archivo csv.  
+
+```{r }
+  # datos provenientes de un csv
+
+  datosVentas<- read.csv('CoffeeChain.csv',sep=';',stringsAsFactors = FALSE)
+```
+
+El número de filas en el dataframe es ```r nrow(datosVentas) ```
+
+```{r}
+
+```
+
+## Exploración de los datos
+
+```{r  fig.width=5,fig.height=5,fig.align='center'}
+ # obtener información de los datos usando summary
+
+ summary(datosVentas)
+ 
+ # obtener información sobre valores y tipos de datos usando str
+ 
+ str(datosVentas)
+ 
+ # observar las primeras filas
+ 
+  kable(head(datosVentas,20))  %>% kable_styling()
+ 
+ # Distribución de ventas por producto
+ 
+ boxplot(datosVentas$Sales ~ datosVentas$Type,data=datosVentas,xlab='Tipo de producto',
+         ylab='Ventas ', main='Distribución de ventas por tipo de producto')
+```

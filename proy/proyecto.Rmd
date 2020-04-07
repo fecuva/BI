@@ -108,6 +108,17 @@ Los datos para el análsis corresponde a una base de datos de un proceso elabora
 
 ### Exploración de los datos
 
+
+```{r}
+library(ggplot2)
+library(factoextra)
+library(kableExtra)
+library(cluster)
+library(NbClust)
+library(mltools)
+library(data.table)
+```
+
 Lo primero es cargar los datos 
 
 ```{r}
@@ -122,6 +133,7 @@ Luego vemos la estadistica descriptiva de los elementos
 ```{r}
 summary(datos)
 ```
+
 
 ```{r}
 library(ggplot2)
@@ -145,6 +157,87 @@ Como si existen entonces procedo a eliminar los datos nulos
 ```{r}
 datos <- na.omit(datos)
 ```
+
+
+```{r}
+data2 <- datos[c(1,4,9,11)]
+data2$production_family <- as.factor(data2$production_family)
+#data2$wk <- as.factor(data2$wk)
+data2$fa_pn <- as.factor(data2$fa_pn)
+# data2$pn_componente <- as.factor(data2$pn_componente)
+# data2$wo <- as.factor(data2$wo )
+# data2$linea <- as.factor(data2$linea)
+data2$turno<- as.factor(data2$turno)
+
+ddata<-one_hot(as.data.table(data2[c(1,2,4)]))
+
+```
+
+
+```{r}
+
+# ejecución del algoritmo kmeans con k =3
+ clusters <- kmeans(ddata,2,nstart=20)
+```
+```{r}
+
+resultado <- data.frame(clusters$cluster,data2)
+
+kable(head(resultado)) %>% kable_styling(full_width = F)
+
+```
+
+```{r}
+  table(clusters$cluster)
+
+```
+
+
+```{r fig.align='center', fig.width=4, fig.height=4}
+
+# construir un grafico de los clusters usando ggplot2
+ggplot(data2,
+       aes(data2$turno,data2$label,color = clusters$cluster)) + geom_point()+
+  ggtitle(label='Distribución por cluster')
+
+```
+```{r}
+# cálculo del score Silhouette
+#score_sil<- silhouette(clusters$cluster,daisy(dataSet))
+# cálculo del valor óptimo de k usando el score silhouette
+fviz_nbclust(ddata,kmeans,method = 'silhouette',k.max = 10)
+
+
+```
+```{r}
+data2$cluster <- clusters$cluster
+datos$cluster <- clusters$cluster
+```
+
+### K-medoids
+
+```{r}
+# generar los clusters usando kmedoids
+clusters_kmedoids<-pam(ddata,2)
+
+```
+#### Tabla de centroides y cantidad de individuos por cluster
+
+```{r}
+   clusters_kmedoids$medoids
+
+   table(clusters_kmedoids$clustering)
+```
+
+#### Visualización de los clusters
+
+```{r}
+# visualización de los clusters
+fviz_cluster(clusters_kmedoids,data=ddata,palette='jco')
+
+```
+
+
 
 
 

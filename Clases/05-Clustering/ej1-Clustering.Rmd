@@ -1,0 +1,145 @@
+---
+title: "Clustering"
+author: "Lorena Zuniga"
+output: html_document
+---
+
+## Ejemplos de clustering en R
+
+### K-means
+Se utilizará la técnica de kmeans para crear clusters a partir de los datos de peso, niveles de colesterol y sexo de un grupo de pacientes.
+
+#### Exploración incial de los datos
+
+```{r}
+
+  # carga de paquetes requeridos
+
+  library(ggplot2)
+  library(factoextra)
+  library(kableExtra)
+  library(cluster)
+  library(NbClust)
+
+  # se leen los datos del archivo
+   dataSet <- read.csv('ColesterolPeso.csv',header = TRUE)
+
+   kable(head(dataSet,10)) %>%kable_styling(full_width = F)
+   
+   # cantidad de filas y variables (columnas)
+```
+La cantidad de registros es `r nrow(dataSet)`  y la cantidad de variables es `r ncol(dataSet)`  
+   
+```{r}
+   
+   str(dataSet)
+   
+   # datos estadísticos
+   
+   summary(dataSet)
+```
+
+#### Aplicación de la técnica de clustering
+
+```{r}
+
+# ejecución del algoritmo kmeans con k =3
+
+ clusters <- kmeans(dataSet,3)
+```
+
+#### Cantidad de individuos por cluster
+
+```{r}
+  table(clusters$cluster)
+
+  # otra forma
+  clusters$size
+```
+
+#### Tabla de centroides
+```{r}
+   clusters$centers
+```
+
+#### Datos originales y cluster asignado
+
+```{r}
+resultado <- data.frame(clusters$cluster,dataSet)
+
+kable(head(resultado)) %>% kable_styling(full_width = F)
+```
+
+#### Visualización de los clusters
+
+##### Usando ggplot2
+```{r fig.align='center', fig.width=4, fig.height=4}
+
+# construir un grafico de los clusters usando ggplot2
+ggplot(dataSet,
+       aes(dataSet$Peso,dataSet$Colesterol,
+           color = clusters$cluster)) + geom_point()+
+  ggtitle(label='Distribución por cluster')
+
+```
+
+##### Usando factoextra
+
+```{r fig.align='center', fig.height=8,fig.width=6}
+# otra forma de visualizar los clusters
+ fviz_cluster(clusters,data=dataSet[,c(1,2)],palette='jco',ggtheme =   theme_minimal())
+
+```
+
+### K-medoids
+
+```{r}
+# generar los clusters usando kmedoids
+clusters_kmedoids<-pam(dataSet[,1:2],3)
+
+```
+#### Tabla de centroides y cantidad de individuos por cluster
+
+```{r}
+   clusters_kmedoids$medoids
+
+   table(clusters_kmedoids$clustering)
+```
+
+#### Visualización de los clusters
+
+```{r}
+# visualización de los clusters
+fviz_cluster(clusters_kmedoids,data=dataSet,palette='jco')
+
+```
+
+### ¿Cómo calcular el valor de k ?
+
+#### Promedio Silhouette
+```{r}
+# cálculo del score Silhouette
+#score_sil<- silhouette(clusters$cluster,daisy(dataSet))
+# cálculo del valor óptimo de k usando el score silhouette
+fviz_nbclust(dataSet,kmeans,method = 'silhouette',k.max = 10)
+
+
+```
+
+#### Método del cod (WSS)
+
+```{r}
+
+# cálculo del valor óptimo de k usando el método del codo
+fviz_nbclust(dataSet,kmeans,method = 'wss',k.max = 10)
+
+```
+
+#### Estadística Gap
+
+```{r}
+# cálculo del valor óptimo de k usando la estadística gap
+fviz_nbclust(dataSet,kmeans,method = 'gap_stat',k.max = 10)
+```
+
+
